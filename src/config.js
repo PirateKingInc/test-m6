@@ -18,7 +18,7 @@ export const TIMING = {
   dt: 1 / 60,
   swayPeriod: 5,
   beamSpeed: 1000,
-  firstQuestion: 1.0,
+  firstQuestion: 0.4, // same as the gap, so the first question is covered by OVERHEAD too
   questionGap: 0.4,
   fireCooldown: 0.2,
   missCooldown: 0.5,
