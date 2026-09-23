@@ -4,6 +4,7 @@ export const OPS = {
   add: { symbol: '+', apply: (a, b) => a + b },
   sub: { symbol: '−', apply: (a, b) => a - b },
   mul: { symbol: '×', apply: (a, b) => a * b },
+  div: { symbol: '÷', apply: (a, b) => a / b },
 };
 
 const MISCONCEPTION_RULES = new Set(['op', 'place', 'sign', 'group', 'divisor']);
@@ -12,15 +13,23 @@ const MISCONCEPTION_RULES = new Set(['op', 'place', 'sign', 'group', 'divisor'])
 export const RULES = {
   off1: ({ answer: c }) => [c - 1, c + 1],
   off2: ({ answer: c }) => [c - 2, c + 2],
-  op: ({ op, a, b }) => ({ add: [Math.abs(a - b), a * b], sub: [a + b], mul: [a + b] })[op] ?? [],
+  op: ({ op, a, b }) => ({ add: [Math.abs(a - b), a * b], sub: [a + b], mul: [a + b], div: [a - b] })[op] ?? [],
   place: ({ answer: c }) => (Math.abs(c) >= 10 ? [c - 10, c + 10] : []),
   sign: ({ op, answer: c }) => (op === 'sub' && c !== 0 ? [-c] : []),
   group: ({ op, a, b, answer: c }) => (op === 'mul' ? [c - b, c + b, c - a, c + a] : []),
+  divisor: ({ op, b }) => (op === 'div' ? [b] : []),
 };
 
 export function generateQuestion(spec, rng) {
   const op = OPS[spec.op];
   if (!op) throw new Error(`unsupported op ${spec.op}`);
+  if (spec.op === 'div') {
+    // Build division backwards from divisor × quotient so it is always exact.
+    const b = rng.int(spec.b[0], spec.b[1]);
+    const answer = rng.int(spec.answer[0], spec.answer[1]);
+    const a = b * answer;
+    return { op: 'div', a, b, answer, text: `${a} ÷ ${b}` };
+  }
   for (let tries = 0; tries < 10000; tries++) {
     const a = rng.int(spec.a[0], spec.a[1]);
     const b = rng.int(spec.b[0], spec.b[1]);
