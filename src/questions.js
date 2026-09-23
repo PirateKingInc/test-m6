@@ -3,6 +3,7 @@
 export const OPS = {
   add: { symbol: '+', apply: (a, b) => a + b },
   sub: { symbol: '−', apply: (a, b) => a - b },
+  mul: { symbol: '×', apply: (a, b) => a * b },
 };
 
 const MISCONCEPTION_RULES = new Set(['op', 'place', 'sign', 'group', 'divisor']);
@@ -11,9 +12,10 @@ const MISCONCEPTION_RULES = new Set(['op', 'place', 'sign', 'group', 'divisor'])
 export const RULES = {
   off1: ({ answer: c }) => [c - 1, c + 1],
   off2: ({ answer: c }) => [c - 2, c + 2],
-  op: ({ op, a, b }) => ({ add: [Math.abs(a - b), a * b], sub: [a + b] })[op] ?? [],
+  op: ({ op, a, b }) => ({ add: [Math.abs(a - b), a * b], sub: [a + b], mul: [a + b] })[op] ?? [],
   place: ({ answer: c }) => (Math.abs(c) >= 10 ? [c - 10, c + 10] : []),
   sign: ({ op, answer: c }) => (op === 'sub' && c !== 0 ? [-c] : []),
+  group: ({ op, a, b, answer: c }) => (op === 'mul' ? [c - b, c + b, c - a, c + a] : []),
 };
 
 export function generateQuestion(spec, rng) {
