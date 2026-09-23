@@ -191,6 +191,7 @@ function correctHit(state, target, beam) {
   clearQuestion(state);
   if (aliveEnemies(state).length === 0) {
     state.result = 'clear';
+    state.score += SCORE.lifeBonus * (state.lives ?? 0);
     state.events.push({ type: 'clear' });
   }
 }
