@@ -39,6 +39,19 @@ export const SECTIONS = [
       { id: 'S5', a: [0, 20], b: [0, 20], answer: [-20, 20], display: [-40, 40], enemies: 6, decoys: 4, descentSpeed: 14, safeAnswerTime: 9, splashWindow: 2.6, sway: 20, rules: ['off1', 'off2', 'sign', 'op'] },
     ],
   },
+  {
+    id: 'mul',
+    op: 'mul',
+    name: 'Coral Canyon',
+    boss: 'Timestentacle',
+    levels: [
+      { id: 'M1', a: [0, 5], b: [1, 2], answer: [0, 10], display: [0, 12], enemies: 4, decoys: 2, descentSpeed: 12, safeAnswerTime: 10, splashWindow: 3.4, sway: 10, rules: ['off1', 'off2', 'group'] },
+      { id: 'M2', a: [1, 5], b: [1, 5], answer: [1, 25], display: [0, 30], enemies: 5, decoys: 3, descentSpeed: 13, safeAnswerTime: 10, splashWindow: 3.2, sway: 16, rules: ['group', 'off1', 'op'] },
+      { id: 'M3', a: [2, 9], b: [2, 5], answer: [4, 45], display: [0, 60], enemies: 5, decoys: 3, descentSpeed: 14, safeAnswerTime: 9, splashWindow: 3.0, sway: 16, rules: ['group', 'off1', 'op'] },
+      { id: 'M4', a: [2, 9], b: [2, 9], answer: [4, 81], display: [0, 100], enemies: 6, decoys: 4, descentSpeed: 15, safeAnswerTime: 9, splashWindow: 2.8, sway: 20, rules: ['group', 'off1', 'op', 'place'] },
+      { id: 'M5', a: [2, 12], b: [2, 12], answer: [4, 144], display: [0, 160], enemies: 7, decoys: 5, descentSpeed: 16, safeAnswerTime: 8, splashWindow: 2.6, sway: 20, rules: ['group', 'off1', 'op', 'place'] },
+    ],
+  },
 ];
 
 export function allLevels() {
