@@ -63,7 +63,7 @@ export function drawJelly(ctx, e, time, opts = {}) {
   const color = opts.color ?? JELLY_COLORS[e.lane % JELLY_COLORS.length];
   const wob = (e.wobble ?? 0) > 0 ? Math.sin(time * 60) * 6 * e.wobble : 0;
   ctx.save();
-  ctx.translate(e.x + wob, e.y);
+  ctx.translate(e.x + wob, e.y + r * 0.3);
   // Tentacles.
   ctx.strokeStyle = color;
   ctx.globalAlpha = 0.7;
@@ -80,9 +80,9 @@ export function drawJelly(ctx, e, time, opts = {}) {
   }
   ctx.globalAlpha = 1;
   // Bell.
-  const bell = ctx.createRadialGradient(0, -r * 0.3, r * 0.1, 0, 0, r * 1.1);
+  const bell = ctx.createRadialGradient(-r * 0.4, -r * 0.6, 1, 0, 0, r * 1.1);
   bell.addColorStop(0, '#ffffff');
-  bell.addColorStop(0.35, color);
+  bell.addColorStop(0.2, color);
   bell.addColorStop(1, shade(color));
   ctx.fillStyle = bell;
   ctx.beginPath();
@@ -112,7 +112,7 @@ function drawNumber(ctx, e, opts) {
     return;
   }
   const text = String(e.value).replace('-', '−');
-  const size = e.r > 40 ? 46 : text.length >= 3 ? 26 : 32;
+  const size = e.r > 40 ? 46 : text.length >= 3 ? 28 : 36;
   ctx.font = `900 ${size}px "Trebuchet MS", "Arial Rounded MT Bold", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -185,6 +185,49 @@ export function drawCrab(ctx, x, time) {
   ctx.restore();
 }
 
+export function drawBeams(ctx, state) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const b of state.beams) {
+    const g = ctx.createLinearGradient(b.x, b.y, b.x, b.y + 60);
+    g.addColorStop(0, 'rgba(255,255,230,1)');
+    g.addColorStop(1, 'rgba(255,240,150,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(b.x - 4, b.y, 8, 60);
+    ctx.fillStyle = '#fffbe0';
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+export function drawBanner(ctx, state) {
+  const { W, bannerH } = WORLD;
+  ctx.fillStyle = 'rgba(2,16,32,0.72)';
+  ctx.fillRect(0, 0, W, bannerH);
+  ctx.strokeStyle = 'rgba(120,230,255,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(0, bannerH);
+  ctx.lineTo(W, bannerH);
+  ctx.stroke();
+  const q = state.question;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if (q) {
+    ctx.font = '900 54px "Trebuchet MS", "Arial Rounded MT Bold", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${q.text.replace(/-/g, '−')} = ?`, W / 2, bannerH / 2 + 4);
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.arc(W / 2 + i * 24, bannerH / 2, 6 + 2 * Math.sin(state.t * 8 + i), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
 export function drawGame(ctx, state, target) {
   const time = state.t;
   drawBackground(ctx, time);
@@ -194,7 +237,9 @@ export function drawGame(ctx, state, target) {
     ctx.fillRect(target.x - target.halfWidth, WORLD.bannerH, target.halfWidth * 2, WORLD.cannonY - WORLD.bannerH);
   }
   for (const e of state.enemies) if (e.alive) drawJelly(ctx, e, time, { highlight: e === target });
+  drawBeams(ctx, state);
   drawCrab(ctx, state.cannon.x, time);
+  drawBanner(ctx, state);
 }
 
 function shade(hex) {
