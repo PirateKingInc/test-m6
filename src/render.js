@@ -68,7 +68,7 @@ export function drawJelly(ctx, e, time, opts = {}) {
   ctx.strokeStyle = color;
   ctx.globalAlpha = 0.7;
   ctx.lineWidth = r > 40 ? 5 : 3;
-  const n = r > 40 ? 6 : 4;
+  const n = opts.tentacles ?? (r > 40 ? 6 : 4);
   for (let i = 0; i < n; i++) {
     const tx = -r * 0.7 + (i * (r * 1.4)) / (n - 1);
     ctx.beginPath();
@@ -99,8 +99,14 @@ export function drawJelly(ctx, e, time, opts = {}) {
     ctx.lineWidth = 3;
     ctx.stroke();
   }
+  if (e.flash > 0) {
+    ctx.globalAlpha = e.flash * 0.6;
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
   ctx.restore();
-  drawNumber(ctx, e, opts);
+  if (!opts.noNumber) drawNumber(ctx, e, opts);
 }
 
 function drawNumber(ctx, e, opts) {
@@ -185,6 +191,95 @@ export function drawCrab(ctx, x, time) {
   ctx.restore();
 }
 
+const BOSS_STYLE = {
+  add: { color: '#ff8a5c', feature: 'claws' },
+  sub: { color: '#4fe0c8', feature: 'fins' },
+  mul: { color: '#b27bff', feature: 'tentacles' },
+  div: { color: '#ffc861', feature: 'shell' },
+  mix: { color: '#f4f0ff', feature: 'crown' },
+};
+
+// Bosses: a giant jelly with eyes and a section-specific feature, plus an HP bar.
+export function drawBoss(ctx, e, time, section) {
+  const style = BOSS_STYLE[section] ?? BOSS_STYLE.add;
+  const r = e.r;
+  ctx.save();
+  ctx.translate(e.x, e.y + r * 0.3);
+  ctx.fillStyle = shade(style.color);
+  ctx.strokeStyle = style.color;
+  if (style.feature === 'claws') {
+    for (const s of [-1, 1]) {
+      ctx.save();
+      ctx.translate(s * r * 1.15, -r * 0.1 + Math.sin(time * 3) * 4);
+      ctx.rotate(s * (0.4 + Math.sin(time * 4) * 0.15));
+      ctx.fillStyle = style.color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r * 0.32, r * 0.22, 0, 0.5, Math.PI * 2 - 0.5);
+      ctx.lineTo(0, 0);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else if (style.feature === 'fins') {
+    ctx.fillStyle = style.color;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(s * r * 0.8, -r * 0.2);
+      ctx.lineTo(s * r * 1.45, -r * 0.7 + Math.sin(time * 5) * 6);
+      ctx.lineTo(s * r * 1.3, r * 0.3);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.3, -r * 0.9);
+    ctx.lineTo(0, -r * 1.45);
+    ctx.lineTo(r * 0.35, -r * 0.9);
+    ctx.fill();
+  } else if (style.feature === 'shell') {
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    for (let a = 0; a < Math.PI * 5; a += 0.2) {
+      const rad = r * 0.12 * a * 0.55;
+      ctx.lineTo(Math.cos(a + time) * rad, -r * 0.35 + Math.sin(a + time) * rad);
+    }
+    ctx.stroke();
+  } else if (style.feature === 'crown') {
+    ctx.fillStyle = '#ffe36e';
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.arc(i * r * 0.32, -r * 1.05 - Math.abs(i) * -4, 7 + Math.sin(time * 4 + i) * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+  drawJelly(ctx, { ...e, lane: 0 }, time, { color: style.color, noNumber: true, tentacles: style.feature === 'tentacles' ? 9 : 6 });
+  // Eyes with a determined brow.
+  for (const s of [-1, 1]) {
+    const ex = e.x + s * r * 0.42;
+    const ey = e.y - r * 0.32;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ex, ey, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#10223a';
+    ctx.beginPath();
+    ctx.arc(ex, ey + 2, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#10223a';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(ex - s * 10, ey - 16);
+    ctx.lineTo(ex + s * 8, ey - 10);
+    ctx.stroke();
+  }
+  drawNumber(ctx, { ...e, y: e.y + r * 0.42 }, {});
+  // HP pips.
+  const w = 16;
+  const total = e.maxHp * w + (e.maxHp - 1) * 4;
+  for (let i = 0; i < e.maxHp; i++) {
+    ctx.fillStyle = i < e.hp ? '#ff5c7a' : 'rgba(255,255,255,0.2)';
+    ctx.fillRect(e.x - total / 2 + i * (w + 4), e.y - r - 22, w, 8);
+  }
+}
+
 export function drawBeams(ctx, state) {
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
@@ -236,7 +331,11 @@ export function drawGame(ctx, state, target) {
     ctx.fillStyle = 'rgba(255,250,200,0.08)';
     ctx.fillRect(target.x - target.halfWidth, WORLD.bannerH, target.halfWidth * 2, WORLD.cannonY - WORLD.bannerH);
   }
-  for (const e of state.enemies) if (e.alive) drawJelly(ctx, e, time, { highlight: e === target });
+  for (const e of state.enemies) {
+    if (!e.alive) continue;
+    if (e.boss) drawBoss(ctx, e, time, state.spec.section);
+    else drawJelly(ctx, e, time, { highlight: e === target });
+  }
   drawBeams(ctx, state);
   drawCrab(ctx, state.cannon.x, time);
   drawBanner(ctx, state);

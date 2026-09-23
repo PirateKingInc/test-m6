@@ -17,9 +17,14 @@ export function knockbackFor(spec) {
   return spec.descentSpeed * (spec.safeAnswerTime + OVERHEAD);
 }
 
+// Boss levels reserve two extra lanes in the middle for the boss.
+export function laneCount(spec) {
+  return spec.enemies + (spec.boss ? 2 : 0);
+}
+
 export function laneLayout(spec) {
   const sway = spec.sway ?? 0;
-  const count = spec.enemies;
+  const count = laneCount(spec);
   const left = WORLD.laneMin + sway;
   const width = (WORLD.laneMax - sway - left) / count;
   return Array.from({ length: count }, (_, i) => ({ x: left + (i + 0.5) * width, width }));
@@ -28,21 +33,32 @@ export function laneLayout(spec) {
 function buildFormation(spec) {
   const lanes = laneLayout(spec);
   const staggered = lanes.length >= 5;
-  return lanes.map((lane, i) => ({
-    id: i,
-    lane: i,
-    baseX: lane.x,
-    baseY: WORLD.startY + (staggered && i % 2 === 1 ? WORLD.stagger : 0),
-    halfWidth: lane.width / 2,
-    x: lane.x,
-    y: 0,
-    r: WORLD.enemyR,
-    hp: 1,
-    alive: true,
-    value: null,
-    rule: null,
-    wobble: 0,
-  }));
+  const bossLane = spec.boss ? Math.floor(lanes.length / 2) - 1 : -1;
+  const enemies = [];
+  lanes.forEach((lane, i) => {
+    if (spec.boss && i === bossLane + 1) return; // second half of the boss
+    const boss = i === bossLane;
+    const x = boss ? (lane.x + lanes[i + 1].x) / 2 : lane.x;
+    enemies.push({
+      id: enemies.length,
+      lane: i,
+      boss,
+      baseX: x,
+      baseY: boss ? WORLD.startY + 20 : WORLD.startY + (staggered && i % 2 === 1 ? WORLD.stagger : 0),
+      halfWidth: boss ? lane.width : lane.width / 2,
+      x,
+      y: 0,
+      r: boss ? WORLD.bossR : WORLD.enemyR,
+      hp: boss ? spec.boss.hp : 1,
+      maxHp: boss ? spec.boss.hp : 1,
+      alive: true,
+      value: null,
+      rule: null,
+      wobble: 0,
+      flash: 0,
+    });
+  });
+  return enemies;
 }
 
 export function createGame(spec, seed = 1) {
@@ -157,7 +173,11 @@ function clearQuestion(state) {
 function kill(state, e, cause) {
   e.alive = false;
   e.hp = 0;
-  state.events.push({ type: 'kill', x: e.x, y: e.y, cause, lane: e.lane });
+  state.events.push({ type: 'kill', x: e.x, y: e.y, cause, lane: e.lane, boss: e.boss });
+  if (e.boss) {
+    state.score += SCORE.boss;
+    state.events.push({ type: 'bossDefeated', x: e.x, y: e.y });
+  }
 }
 
 function correctHit(state, target, beam) {
@@ -167,7 +187,9 @@ function correctHit(state, target, beam) {
   const fast = f > 0;
   stats.correct++;
   stats.answerTimes.push(answerTime);
-  target.hp -= 1;
+  // A fast hit on the boss counts double (the boss can't be splashed by its own hit).
+  target.hp -= target.boss && fast ? 2 : 1;
+  target.flash = 1;
   if (target.hp <= 0) kill(state, target, 'hit');
   let splashKills = 0;
   const radius = fast ? splashRadius(f) : 0;
@@ -176,6 +198,7 @@ function correctHit(state, target, beam) {
     for (const e of aliveEnemies(state)) {
       if (e === target || Math.hypot(e.x - target.x, e.y - target.y) > radius) continue;
       e.hp -= 1;
+      e.flash = 1;
       if (e.hp <= 0) {
         kill(state, e, 'splash');
         splashKills++;
@@ -265,7 +288,10 @@ export function step(state, input = {}) {
   const move = input.move ?? 0;
   if (move) setCannonX(state, state.cannon.x + move * WORLD.cannonSpeed * dt);
   state.cannon.cooldown = Math.max(0, state.cannon.cooldown - dt);
-  for (const e of state.enemies) e.wobble = Math.max(0, e.wobble - dt * 2.5);
+  for (const e of state.enemies) {
+    e.wobble = Math.max(0, e.wobble - dt * 2.5);
+    e.flash = Math.max(0, e.flash - dt * 3);
+  }
   state.offsetY += state.spec.descentSpeed * dt;
   state.stats.maxDepth = Math.max(state.stats.maxDepth, state.offsetY);
   positionEnemies(state);
