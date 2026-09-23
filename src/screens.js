@@ -307,7 +307,65 @@ function drawStar(ctx, x, y, r, lit) {
   ctx.restore();
 }
 
-export function drawHud(ctx, state, levelId) {
+export function hudButtons(muted) {
+  return [
+    { id: 'pause', x: WORLD.W - 32, y: 68, r: 20, icon: 'pause' },
+    { id: 'mute', x: WORLD.W - 84, y: 68, r: 20, icon: muted ? 'muted' : 'sound' },
+  ];
+}
+
+export function pauseButtons() {
+  return [
+    { id: 'resume', x: WORLD.W / 2 + 70, y: 420, r: 64, icon: 'play' },
+    { id: 'map', x: WORLD.W / 2 - 100, y: 430, r: 44, icon: 'map' },
+  ];
+}
+
+export function drawPause(ctx, time) {
+  ctx.fillStyle = 'rgba(2,12,24,0.7)';
+  ctx.fillRect(0, 0, WORLD.W, WORLD.H);
+  for (const b of pauseButtons()) drawButton(ctx, b, time);
+}
+
+function drawHudIcon(ctx, b) {
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.fillStyle = 'rgba(190,240,255,0.18)';
+  ctx.beginPath();
+  ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(220,250,255,0.9)';
+  ctx.strokeStyle = 'rgba(220,250,255,0.9)';
+  ctx.lineWidth = 3;
+  if (b.icon === 'pause') {
+    ctx.fillRect(-7, -8, 5, 16);
+    ctx.fillRect(2, -8, 5, 16);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(-9, -4);
+    ctx.lineTo(-4, -4);
+    ctx.lineTo(2, -10);
+    ctx.lineTo(2, 10);
+    ctx.lineTo(-4, 4);
+    ctx.lineTo(-9, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    if (b.icon === 'muted') {
+      ctx.moveTo(6, -5);
+      ctx.lineTo(12, 5);
+      ctx.moveTo(12, -5);
+      ctx.lineTo(6, 5);
+    } else {
+      ctx.arc(4, 0, 7, -0.9, 0.9);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+export function drawHud(ctx, state, levelId, muted = false) {
+  for (const b of hudButtons(muted)) drawHudIcon(ctx, b);
   ctx.font = `800 22px ${FONT}`;
   ctx.textBaseline = 'middle';
   ctx.fillStyle = 'rgba(190,240,255,0.85)';

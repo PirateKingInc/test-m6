@@ -1,5 +1,5 @@
 // Save data: unlocks, per-level best scores, endings seen. Pure apart from the injected
-// storage object (window.localStorage in the browser, a stub in tests).
+// storage object (localStorage in the browser, a stub in tests).
 import { allLevels, SECTIONS } from './data/levels.js';
 
 export const STORAGE_KEY = 'tidelight-tally-v1';
