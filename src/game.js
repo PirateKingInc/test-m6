@@ -1,7 +1,21 @@
 // Pure game simulation for a single level attempt. No DOM access.
-import { WORLD, TIMING } from './config.js';
+import { WORLD, TIMING, SPLASH, OVERHEAD, SCORE } from './config.js';
 import { createRng } from './rng.js';
 import { makeRound } from './questions.js';
+
+// f = max(0, 1 - t/w): 1 for an instant answer, 0 once the splash window has passed.
+export function speedFactor(answerTime, splashWindow) {
+  return Math.max(0, 1 - answerTime / splashWindow);
+}
+
+export function splashRadius(f) {
+  return SPLASH.baseRadius + SPLASH.extraRadius * f;
+}
+
+// Every correct hit pushes the formation back up by this much (SPEC §3).
+export function knockbackFor(spec) {
+  return spec.descentSpeed * (spec.safeAnswerTime + OVERHEAD);
+}
 
 export function laneLayout(spec) {
   const sway = spec.sway ?? 0;
@@ -46,7 +60,9 @@ export function createGame(spec, seed = 1) {
     questionCount: 0,
     nextQuestionAt: TIMING.firstQuestion,
     result: null,
-    stats: { fired: 0, correct: 0, misses: 0 },
+    score: 0,
+    combo: 0,
+    stats: { fired: 0, correct: 0, misses: 0, fast: 0, splashKills: 0, answerTimes: [], maxDepth: 0 },
     events: [],
   };
   positionEnemies(state);
@@ -143,11 +159,35 @@ function kill(state, e, cause) {
   state.events.push({ type: 'kill', x: e.x, y: e.y, cause, lane: e.lane });
 }
 
-function correctHit(state, target) {
-  state.stats.correct++;
+function correctHit(state, target, beam) {
+  const { spec, stats } = state;
+  const answerTime = beam.firedAt - state.question.shownAt;
+  const f = speedFactor(answerTime, spec.splashWindow);
+  const fast = f > 0;
+  stats.correct++;
+  stats.answerTimes.push(answerTime);
   target.hp -= 1;
   if (target.hp <= 0) kill(state, target, 'hit');
-  state.events.push({ type: 'correct', x: target.x, y: target.y });
+  let splashKills = 0;
+  const radius = fast ? splashRadius(f) : 0;
+  if (fast) {
+    stats.fast++;
+    for (const e of aliveEnemies(state)) {
+      if (e === target || Math.hypot(e.x - target.x, e.y - target.y) > radius) continue;
+      e.hp -= 1;
+      if (e.hp <= 0) {
+        kill(state, e, 'splash');
+        splashKills++;
+      }
+    }
+  }
+  stats.splashKills += splashKills;
+  state.combo = fast ? state.combo + 1 : 0;
+  const points = SCORE.hit + Math.round(SCORE.speedBonus * f) + SCORE.splashKill * splashKills;
+  state.score += points;
+  state.offsetY = Math.max(0, state.offsetY - knockbackFor(spec));
+  positionEnemies(state);
+  state.events.push({ type: 'correct', x: target.x, y: target.y, fast, f, radius, points, splashKills });
   clearQuestion(state);
   if (aliveEnemies(state).length === 0) {
     state.result = 'clear';
@@ -163,6 +203,7 @@ function resolveBeam(state, beam, target) {
     correctHit(state, target, beam);
   } else {
     state.stats.misses++;
+    state.combo = 0;
     target.wobble = 1;
     state.cannon.cooldown = Math.max(state.cannon.cooldown, TIMING.missCooldown);
     state.events.push({ type: 'miss', x: target.x, y: target.y });
@@ -203,6 +244,7 @@ export function step(state, input = {}) {
   state.cannon.cooldown = Math.max(0, state.cannon.cooldown - dt);
   for (const e of state.enemies) e.wobble = Math.max(0, e.wobble - dt * 2.5);
   state.offsetY += state.spec.descentSpeed * dt;
+  state.stats.maxDepth = Math.max(state.stats.maxDepth, state.offsetY);
   positionEnemies(state);
   updateBeams(state);
   if (!state.result && !state.question && state.t >= state.nextQuestionAt && aliveEnemies(state).length) {

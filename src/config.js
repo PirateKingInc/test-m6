@@ -23,3 +23,12 @@ export const TIMING = {
   fireCooldown: 0.2,
   missCooldown: 0.5,
 };
+
+// Speed-to-damage (SPEC §2).
+export const SPLASH = { baseRadius: 110, extraRadius: 90 };
+
+// Worst-case time per question that isn't thinking time: the gap before the next
+// question plus the longest possible beam flight (SPEC §3).
+export const OVERHEAD = 1.0;
+
+export const SCORE = { hit: 100, speedBonus: 100, splashKill: 50, boss: 500, lifeBonus: 200 };

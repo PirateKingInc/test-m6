@@ -72,6 +72,8 @@ test('a beam aimed at an empty lane flies off without effect', () => {
 test('beams from an already-answered question fizzle', () => {
   const g = createGame(spec, 8);
   stepUntil(g, (s) => s.question);
+  // Answer slowly so splash can't remove the decoy.
+  stepUntil(g, (s) => s.t - s.question.shownAt > spec.splashWindow);
   const right = answerEnemy(g);
   const wrong = decoyEnemy(g);
   // Fire at the decoy first but make the correct beam land first by putting it closer.
