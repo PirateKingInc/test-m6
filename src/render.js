@@ -1,5 +1,6 @@
 // Canvas renderer. Reads game state, never mutates it. All art is drawn in code.
 import { WORLD } from './config.js';
+import { speedFactor } from './game.js';
 
 const JELLY_COLORS = ['#ff7eb6', '#7afcff', '#b18cff', '#ffd36e', '#7dffa8', '#ff9f6e', '#6ec8ff'];
 
@@ -29,6 +30,16 @@ export function drawBackground(ctx, time) {
     ctx.fill();
   }
   ctx.restore();
+  // Rising bubbles (pure function of time, so no state).
+  ctx.fillStyle = 'rgba(200,240,255,0.18)';
+  for (let i = 0; i < 18; i++) {
+    const speed = 20 + (i * 37) % 30;
+    const y = H - ((time * speed + i * 97) % (H + 40));
+    const x = ((i * 131) % W) + Math.sin(time * 1.5 + i) * 10;
+    ctx.beginPath();
+    ctx.arc(x, y, 2 + (i % 4), 0, Math.PI * 2);
+    ctx.fill();
+  }
   // Seabed with coral silhouettes.
   ctx.fillStyle = '#0d2a3a';
   ctx.beginPath();
@@ -313,6 +324,15 @@ export function drawBanner(ctx, state) {
     ctx.font = '900 54px "Trebuchet MS", "Arial Rounded MT Bold", sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.fillText(`${q.text.replace(/-/g, '−')} = ?`, W / 2, bannerH / 2 + 4);
+    // Splash timer: drains over the splash window; answering while it's lit splashes.
+    const f = speedFactor(state.t - q.shownAt, state.spec.splashWindow);
+    if (f > 0) {
+      ctx.fillStyle = '#ffe36e';
+      ctx.shadowColor = '#ffe36e';
+      ctx.shadowBlur = 12;
+      ctx.fillRect(W / 2 - (W / 2) * f, bannerH - 7, W * f, 6);
+      ctx.shadowBlur = 0;
+    }
   } else {
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     for (let i = -1; i <= 1; i++) {

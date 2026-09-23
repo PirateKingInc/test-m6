@@ -6,6 +6,7 @@ import { getLevel } from './data/levels.js';
 import { createFlow, frontierLevel, play, askNewGame, newGame, toMap, toTitle, startLevel, finishLevel, advance } from './flow.js';
 import { loadProgress, saveProgress } from './progress.js';
 import { createAudio } from './audio.js';
+import { createFx, fxHandle, fxUpdate, fxDraw, shakeOffset } from './fx.js';
 import { drawGame } from './render.js';
 import { drawTitle, drawResult, drawHud, drawMap, drawConfirm, drawEnding, drawPause, hitButton, hudButtons, pauseButtons } from './screens.js';
 
@@ -36,6 +37,8 @@ function storage() {
 const flow = createFlow(loadProgress(storage()));
 const audio = createAudio(storage());
 let paused = false;
+let fx = createFx();
+let resultTimer = 0; // lets the final explosion play before the result screen
 let game = null;
 let gameKey = null;
 let attempt = 0;
@@ -47,6 +50,8 @@ function syncGame() {
   if (key !== gameKey) {
     game = createGame(getLevel(flow.levelId), (Date.now() ^ (attempt * 7919)) >>> 0);
     gameKey = key;
+    fx = createFx();
+    resultTimer = 0;
   }
 }
 
@@ -143,15 +148,23 @@ function frame(now) {
       acc -= TIMING.dt;
     }
     audio.handle(game.events);
+    fxHandle(fx, game.events);
     game.events.length = 0;
-    if (game.result) {
+    if (game.result) resultTimer += elapsed;
+    if (game.result && resultTimer > 1.2) {
       finishLevel(flow, game.result, game.score, game.lives);
       saveProgress(storage(), flow.progress);
       acc = 0;
     }
   }
   if (flow.screen === 'play') {
-    drawGame(ctx, game, targetAt(game, game.cannon.x));
+    if (!paused) fxUpdate(fx, elapsed);
+    const shake = shakeOffset(fx, menuTime);
+    ctx.save();
+    ctx.translate(shake.x, shake.y);
+    drawGame(ctx, game, game.result ? null : targetAt(game, game.cannon.x));
+    fxDraw(ctx, fx);
+    ctx.restore();
     drawHud(ctx, game, flow.levelId, audio.muted);
     if (paused) drawPause(ctx, menuTime);
   } else if (flow.screen === 'title') {
