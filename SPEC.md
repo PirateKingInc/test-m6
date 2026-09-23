@@ -25,7 +25,7 @@ two in sync.
 | Crab cannon | y = 730 |
 | Pearl beam | 1000 units/s, locks onto the enemy whose lane the crab is under when it fires |
 | Question gap | 0.4 s between a correct hit and the next question (enemies keep moving) |
-| First question | 1.0 s after the level starts |
+| First question | 0.4 s after the level starts (same as the gap, so Ω covers it) |
 | Fire cooldown | 0.2 s; a miss adds 0.5 s (the only consequence of a miss) |
 | Lives | 3 per level attempt |
 
@@ -261,3 +261,23 @@ formula and the near-miss bound.
 - Accounts, cloud saves, leaderboards
 
 Extra ideas go to `BACKLOG.md`.
+
+## 10. Verification
+
+- **Generator properties** (`tests/questions.property.test.js`): 10 000 questions per level
+  (280 000 total) — correctness, exact spec ranges, display range, decoy count, no decoy
+  equal to the answer, no duplicate values on screen, every decoy reproducible from its
+  rule and within the near-miss bound.
+- **Survivability** (`tests/survivability.test.js`): for every level, a *correct-but-slow*
+  policy (always the right jelly, always at exactly `s` seconds — never inside the splash
+  window) clears 20 seeds with zero breaches, zero splashes, and a maximum sink ≤ v·(s+Ω);
+  the analytic bound v·(s+Ω) ≤ 0.8·D0 is asserted per level.
+- **Difficulty curve** (`tests/difficulty.test.js`, `node tools/difficulty-report.js`):
+  a *typical child* policy (reaction time 1.2 s + 0.45 s per operand digit + operation cost
+  (−: 0.5, ×: 1.0, ÷: 1.5) + 0.8 s for carrying/borrowing/negatives + 0.1 s per number on
+  screen + 0.4 s to aim, log-normal noise σ = 0.3, 8 % chance of first shooting a decoy
+  then re-thinking for 1 s) plays 40 seeds per level. Difficulty = mean pressure (fraction
+  of the way to the defence line) + mean lives lost / 3 + failure rate. A level is a
+  **spike** if it is more than 0.15 harder than both neighbours in play order.
+- **Bot playthroughs** (`tests/playthrough.test.js`, `tests/e2e/`): New Game → all four
+  sections and bosses → ending, and a second run that also clears Mixed Operations.
