@@ -71,13 +71,36 @@ export const SECTIONS = [
       { id: 'D-Boss', b: [3, 12], answer: [3, 12], display: [0, 20], enemies: 5, boss: { hp: 5 }, decoys: 5, descentSpeed: 15, safeAnswerTime: 9, splashWindow: 2.6, sway: 12, rules: ['off1', 'off2', 'divisor', 'place'] },
     ],
   },
+  {
+    id: 'mix',
+    op: 'mix',
+    name: 'The Abyss',
+    boss: 'The Tidemind',
+    optional: true,
+    // Each question picks one of the listed levels (one per operation) and uses its
+    // number ranges, display range and distractor rules.
+    levels: [
+      { id: 'X1', mix: ['A3', 'S2', 'M2', 'D2'], enemies: 6, decoys: 4, descentSpeed: 16, safeAnswerTime: 9, splashWindow: 2.8, sway: 16 },
+      { id: 'X2', mix: ['A4', 'S3', 'M3', 'D3'], enemies: 6, decoys: 4, descentSpeed: 17, safeAnswerTime: 8, splashWindow: 2.6, sway: 20 },
+      { id: 'X3', mix: ['A5', 'S4', 'M4', 'D4'], enemies: 7, decoys: 5, descentSpeed: 18, safeAnswerTime: 8, splashWindow: 2.4, sway: 20 },
+      { id: 'X-Boss', mix: ['A5', 'S5', 'M5', 'D5'], enemies: 5, boss: { hp: 6 }, decoys: 5, descentSpeed: 16, safeAnswerTime: 9, splashWindow: 2.4, sway: 12 },
+    ],
+  },
 ];
 
+let cache = null;
+
 export function allLevels() {
+  if (cache) return cache;
   const out = [];
   for (const section of SECTIONS) {
     for (const level of section.levels) out.push({ ...level, op: level.op ?? section.op, section: section.id });
   }
+  const byId = new Map(out.map((l) => [l.id, l]));
+  for (const level of out) {
+    if (level.mix) level.mix = level.mix.map((id) => byId.get(id));
+  }
+  cache = out;
   return out;
 }
 

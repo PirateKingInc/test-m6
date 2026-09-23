@@ -86,9 +86,11 @@ export function generateDistractors(q, spec, count, rng) {
   return out;
 }
 
+// Mixed levels delegate each question to one of their referenced single-operation specs.
 export function makeRound(spec, rng, decoyCount = spec.decoys) {
-  const question = generateQuestion(spec, rng);
-  const decoys = generateDistractors(question, spec, decoyCount, rng);
+  const source = spec.mix ? rng.pick(spec.mix) : spec;
+  const question = generateQuestion(source, rng);
+  const decoys = generateDistractors(question, source, decoyCount, rng);
   return { question, decoys };
 }
 

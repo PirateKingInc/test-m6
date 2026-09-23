@@ -1,8 +1,11 @@
 // Pure screen flow: which screen is showing, which level is being played, what's unlocked.
 // The browser (main.js) and the bots (tests) drive the exact same state machine.
-import { allLevels } from './data/levels.js';
+import { allLevels, SECTIONS } from './data/levels.js';
 
 export const LEVEL_ORDER = allLevels().map((l) => l.id);
+// The final (boss) level of every required section.
+export const REQUIRED_BOSSES = SECTIONS.filter((s) => !s.optional).map((s) => s.levels[s.levels.length - 1].id);
+const OPTIONAL_STARTS = SECTIONS.filter((s) => s.optional).map((s) => s.levels[0].id);
 
 export function createProgress() {
   return { cleared: [], best: {} };
@@ -11,6 +14,7 @@ export function createProgress() {
 export function isUnlocked(progress, id) {
   const i = LEVEL_ORDER.indexOf(id);
   if (i < 0) return false;
+  if (OPTIONAL_STARTS.includes(id) && !REQUIRED_BOSSES.every((b) => progress.cleared.includes(b))) return false;
   return i === 0 || progress.cleared.includes(LEVEL_ORDER[i - 1]);
 }
 
