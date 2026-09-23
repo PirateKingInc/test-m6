@@ -2,8 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, step, laneLayout } from '../src/game.js';
 import { WORLD, TIMING } from '../src/config.js';
+import { getLevel } from '../src/data/levels.js';
 
-const spec = { enemies: 7, descentSpeed: 12, sway: 20 };
+const spec = { ...getLevel('A5'), enemies: 7, sway: 20 };
 
 test('one enemy per lane, lanes never overlap and fit the playfield', () => {
   for (let n = 1; n <= 7; n++) {

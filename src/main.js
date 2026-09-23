@@ -1,6 +1,7 @@
 // Browser entry: canvas sizing, fixed-timestep loop, input. Game rules live in game.js.
 import { WORLD, TIMING } from './config.js';
-import { createGame, step } from './game.js';
+import { createGame, step, fire, fireAtX, setCannonX, targetAt } from './game.js';
+import { getLevel } from './data/levels.js';
 import { drawGame } from './render.js';
 
 const canvas = document.getElementById('game');
@@ -19,12 +20,33 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
+const spec = getLevel('A1');
+let state = createGame(spec, Date.now() >>> 0);
+
 const keys = new Set();
-window.addEventListener('keydown', (e) => keys.add(e.key));
+window.addEventListener('keydown', (e) => {
+  keys.add(e.key);
+  if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    fire(state);
+  }
+});
 window.addEventListener('keyup', (e) => keys.delete(e.key));
 
-const demoSpec = { enemies: 6, descentSpeed: 10, sway: 16 };
-let state = createGame(demoSpec, Date.now());
+// Convert a pointer event to world coordinates.
+function toWorld(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'mouse') setCannonX(state, toWorld(e).x);
+});
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  canvas.focus();
+  fireAtX(state, toWorld(e).x);
+});
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 let last = performance.now();
 let acc = 0;
@@ -36,8 +58,8 @@ function frame(now) {
     step(state, { move });
     acc -= TIMING.dt;
   }
-  if (state.offsetY > 500) state = createGame(demoSpec, Date.now());
-  drawGame(ctx, state, null);
+  if (state.result || state.offsetY > 500) state = createGame(spec, Date.now() >>> 0);
+  drawGame(ctx, state, targetAt(state, state.cannon.x));
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

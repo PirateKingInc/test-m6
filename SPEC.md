@@ -19,7 +19,7 @@ two in sync.
 | Playfield | 600 × 800 logical units, portrait, scaled to fit the viewport (letterboxed) |
 | Question banner | top 100 units |
 | Formation start | top row centre at y = 150; with ≥ 5 lanes odd lanes sit one stagger (72) lower |
-| Enemy radius | 30 (boss: 56, occupies two lanes) |
+| Enemy radius | 34 (boss: 56, occupies two lanes) |
 | Lanes | one enemy per lane, lanes evenly split the band x ∈ [40 + sway, 560 − sway]. No enemy is ever behind another, so no shot is ever blocked |
 | Defence line | y = 640. An enemy whose lower edge touches it **breaches** |
 | Crab cannon | y = 730 |
@@ -94,7 +94,7 @@ by K ≥ that. So the deepest the formation ever gets is v·(s+Ω) below its sta
 and every level satisfies
 
 ```
-v · (s + Ω) ≤ 0.8 · D0        D0 = 640 − 30 − 222 = 388 units (lowest start row to breach)
+v · (s + Ω) ≤ 0.8 · D0        D0 = 640 − 34 − 222 = 384 units (lowest start row to breach)
 ```
 
 `tests/survivability.test.js` proves this by simulation for every level
@@ -171,7 +171,7 @@ ranges, display range and rules. Never required for the ending.
 | X3 | A5, S4, M4, D4 | 7 | 5 | 18 | 8 | 2.4 | 20 |
 | X-Boss | A5, S5, M5, D5 | 5 + boss HP 6 | 5 | 16 | 9 | 2.4 | 12 |
 
-Max v·(s+Ω) across all levels is 18·9 = 162 ≤ 0.8·388 = 310.4 ✓.
+Max v·(s+Ω) across all levels is 18·9 = 162 ≤ 0.8·384 = 307.2 ✓.
 
 **Why the curve suits young children:** A1 has three jellies, one decoy, single
 digit sums, a 12 s think time, no sway, and decoys that differ by 1–2
