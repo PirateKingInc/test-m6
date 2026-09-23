@@ -27,6 +27,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
       pages: write
@@ -57,16 +58,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+          curl -s --max-time 20 -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages" \
             -d '{"source":{"branch":"gh-pages","path":"/"}}' | head -c 400 || true
       - name: Poll live URL until HTTP 200 with this commit
         run: |
           for i in $(seq 1 60); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL" || true)
-            live=$(curl -s "${SITE_URL}version.txt?nocache=$i" || true)
+            code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "$SITE_URL" || true)
+            live=$(curl -s --max-time 10 "${SITE_URL}version.txt?nocache=$i" || true)
             echo "attempt $i: $SITE_URL -> $code (live version: ${live:0:12})"
-            if [ "$code" = "200" ] && [ "$live" = "$GITHUB_SHA" ]; then exit 0; fi
+            if [ "$code" = "200" ] && [ "$live" = "$GITHUB_SHA" ]; then echo "Live: $SITE_URL"; exit 0; fi
             sleep 15
           done
           echo "Site never returned 200 for $GITHUB_SHA" >&2
