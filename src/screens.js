@@ -139,6 +139,30 @@ export function drawHud(ctx, state, levelId) {
   ctx.fillStyle = 'rgba(190,240,255,0.85)';
   ctx.textAlign = 'left';
   ctx.fillText(levelId, 14, 22);
+  for (let i = 0; i < 3; i++) drawShell(ctx, 24 + i * 30, 62, i < state.lives);
   ctx.textAlign = 'right';
   ctx.fillText(String(state.score), WORLD.W - 14, 22);
+}
+
+// A life is a little glowing scallop shell.
+function drawShell(ctx, x, y, full) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath();
+  ctx.moveTo(0, 10);
+  ctx.arc(0, 0, 12, Math.PI * 1.1, Math.PI * 1.9);
+  ctx.closePath();
+  ctx.fillStyle = full ? '#ffb4c8' : 'rgba(255,255,255,0.12)';
+  ctx.fill();
+  if (full) {
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    for (let k = -2; k <= 2; k++) {
+      ctx.beginPath();
+      ctx.moveTo(0, 10);
+      ctx.lineTo(k * 4.5, -10);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
