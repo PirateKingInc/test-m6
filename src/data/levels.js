@@ -52,6 +52,20 @@ export const SECTIONS = [
       { id: 'M5', a: [2, 12], b: [2, 12], answer: [4, 144], display: [0, 160], enemies: 7, decoys: 5, descentSpeed: 16, safeAnswerTime: 8, splashWindow: 2.6, sway: 20, rules: ['group', 'off1', 'op', 'place'] },
     ],
   },
+  {
+    id: 'div',
+    op: 'div',
+    name: 'Twilight Trench',
+    boss: 'Splitshell',
+    // For ÷, b is the divisor and answer is the quotient; the dividend is b × answer.
+    levels: [
+      { id: 'D1', b: [1, 2], answer: [0, 5], display: [0, 9], enemies: 4, decoys: 2, descentSpeed: 13, safeAnswerTime: 10, splashWindow: 3.4, sway: 10, rules: ['off1', 'off2'] },
+      { id: 'D2', b: [2, 5], answer: [1, 5], display: [0, 12], enemies: 5, decoys: 3, descentSpeed: 14, safeAnswerTime: 10, splashWindow: 3.2, sway: 16, rules: ['off1', 'off2', 'divisor'] },
+      { id: 'D3', b: [2, 5], answer: [1, 10], display: [0, 15], enemies: 5, decoys: 3, descentSpeed: 15, safeAnswerTime: 9, splashWindow: 3.0, sway: 16, rules: ['off1', 'off2', 'divisor'] },
+      { id: 'D4', b: [2, 9], answer: [2, 9], display: [0, 15], enemies: 6, decoys: 4, descentSpeed: 16, safeAnswerTime: 9, splashWindow: 2.8, sway: 20, rules: ['off1', 'off2', 'divisor'] },
+      { id: 'D5', b: [2, 12], answer: [2, 12], display: [0, 20], enemies: 7, decoys: 5, descentSpeed: 17, safeAnswerTime: 8, splashWindow: 2.6, sway: 20, rules: ['off1', 'off2', 'divisor', 'place'] },
+    ],
+  },
 ];
 
 export function allLevels() {
