@@ -32,14 +32,14 @@ export function startLevel(flow, id) {
 }
 
 // Called by the host when the level simulation reports a result.
-export function finishLevel(flow, outcome, score) {
+export function finishLevel(flow, outcome, score, lives = 0) {
   const { progress } = flow;
   const newBest = score > (progress.best[flow.levelId] ?? 0);
   if (outcome === 'clear') {
     if (!progress.cleared.includes(flow.levelId)) progress.cleared.push(flow.levelId);
     if (newBest) progress.best[flow.levelId] = score;
   }
-  flow.lastResult = { outcome, score, newBest: outcome === 'clear' && newBest };
+  flow.lastResult = { outcome, score, stars: outcome === 'clear' ? Math.max(1, lives) : 0, newBest: outcome === 'clear' && newBest };
   flow.screen = outcome === 'clear' ? 'clear' : 'gameover';
 }
 

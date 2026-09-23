@@ -60,9 +60,10 @@ export function createGame(spec, seed = 1) {
     questionCount: 0,
     nextQuestionAt: TIMING.firstQuestion,
     result: null,
+    lives: TIMING.lives,
     score: 0,
     combo: 0,
-    stats: { fired: 0, correct: 0, misses: 0, fast: 0, splashKills: 0, answerTimes: [], maxDepth: 0 },
+    stats: { fired: 0, correct: 0, misses: 0, breaches: 0, fast: 0, splashKills: 0, answerTimes: [], maxDepth: 0 },
     events: [],
   };
   positionEnemies(state);
@@ -191,7 +192,7 @@ function correctHit(state, target, beam) {
   clearQuestion(state);
   if (aliveEnemies(state).length === 0) {
     state.result = 'clear';
-    state.score += SCORE.lifeBonus * (state.lives ?? 0);
+    state.score += SCORE.lifeBonus * state.lives;
     state.events.push({ type: 'clear' });
   }
 }
@@ -235,6 +236,27 @@ function updateBeams(state) {
   state.beams = remaining;
 }
 
+export function breached(e) {
+  return e.alive && e.y + e.r >= WORLD.defenseY;
+}
+
+// Any enemy touching the defence line costs one life and sweeps the formation back
+// to its start height. Same rule on every level, bosses included (SPEC §1).
+function checkBreach(state) {
+  const culprit = state.enemies.find(breached);
+  if (!culprit) return;
+  state.lives--;
+  state.stats.breaches++;
+  state.combo = 0;
+  state.events.push({ type: 'breach', x: culprit.x, y: WORLD.defenseY });
+  state.offsetY = 0;
+  positionEnemies(state);
+  if (state.lives <= 0) {
+    state.result = 'lost';
+    state.events.push({ type: 'gameover' });
+  }
+}
+
 // Advance the simulation by exactly one fixed timestep.
 export function step(state, input = {}) {
   if (state.result) return state;
@@ -247,6 +269,8 @@ export function step(state, input = {}) {
   state.offsetY += state.spec.descentSpeed * dt;
   state.stats.maxDepth = Math.max(state.stats.maxDepth, state.offsetY);
   positionEnemies(state);
+  checkBreach(state);
+  if (state.result) return state;
   updateBeams(state);
   if (!state.result && !state.question && state.t >= state.nextQuestionAt && aliveEnemies(state).length) {
     newQuestion(state);

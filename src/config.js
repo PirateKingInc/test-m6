@@ -22,6 +22,7 @@ export const TIMING = {
   questionGap: 0.4,
   fireCooldown: 0.2,
   missCooldown: 0.5,
+  lives: 3,
 };
 
 // Speed-to-damage (SPEC §2).

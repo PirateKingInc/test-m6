@@ -91,7 +91,7 @@ function frame(now) {
     }
     game.events.length = 0;
     if (game.result) {
-      finishLevel(flow, game.result, game.score);
+      finishLevel(flow, game.result, game.score, game.lives);
       acc = 0;
     }
   }
