@@ -14,3 +14,19 @@ jobs:
           node-version: 22
       - name: Run all tests
         run: npm test
+
+  browser-playthrough:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright (dev-only, not shipped)
+        run: |
+          npm i --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Bot 1 — New Game to the ending
+        run: node tests/e2e/playthrough.e2e.js
+      - name: Bot 2 — also clears Mixed Operations
+        run: node tests/e2e/playthrough.e2e.js --mixed

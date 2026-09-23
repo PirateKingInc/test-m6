@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"tests/**/*.test.js\"",
-    "serve": "npx --yes http-server -c-1 -p 8080 ."
+    "serve": "npx --yes http-server -c-1 -p 8080 .",
+    "e2e": "node tests/e2e/playthrough.e2e.js && node tests/e2e/playthrough.e2e.js --mixed",
+    "difficulty": "node tools/difficulty-report.js"
   },
   "engines": {
     "node": ">=20"

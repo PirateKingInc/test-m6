@@ -8,7 +8,13 @@ import { loadProgress, saveProgress } from './progress.js';
 import { createAudio } from './audio.js';
 import { createFx, fxHandle, fxUpdate, fxDraw, shakeOffset } from './fx.js';
 import { drawGame } from './render.js';
-import { drawTitle, drawResult, drawHud, drawMap, drawConfirm, drawEnding, drawPause, hitButton, hudButtons, pauseButtons } from './screens.js';
+import { drawTitle, drawResult, drawHud, drawMap, drawConfirm, drawEnding, drawPause, hitButton, hudButtons, pauseButtons, buttonsFor } from './screens.js';
+
+// `?bot` exposes read-only state for the CI browser playthrough; `speed` fast-forwards the
+// fixed-timestep simulation (more steps per frame, same rules).
+const params = new URLSearchParams(location.search);
+const BOT = params.has('bot');
+const SPEED = BOT ? Math.min(60, Math.max(1, Number(params.get('speed')) || 1)) : 1;
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -141,7 +147,7 @@ function frame(now) {
   last = now;
   menuTime += elapsed;
   if (flow.screen === 'play' && !paused) {
-    acc += elapsed;
+    acc += elapsed * SPEED;
     const move = (keys.has('ArrowRight') || keys.has('d') ? 1 : 0) - (keys.has('ArrowLeft') || keys.has('a') ? 1 : 0);
     while (acc >= TIMING.dt && !game.result) {
       step(game, { move });
@@ -150,7 +156,7 @@ function frame(now) {
     audio.handle(game.events);
     fxHandle(fx, game.events);
     game.events.length = 0;
-    if (game.result) resultTimer += elapsed;
+    if (game.result) resultTimer += elapsed * SPEED;
     if (game.result && resultTimer > 1.2) {
       finishLevel(flow, game.result, game.score, game.lives);
       saveProgress(storage(), flow.progress);
@@ -181,3 +187,32 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+if (BOT) {
+  window.__tidelight = {
+    state: () => ({
+      screen: flow.screen,
+      levelId: flow.levelId,
+      ending: flow.ending,
+      cleared: [...flow.progress.cleared],
+      paused,
+      game:
+        flow.screen === 'play' && game
+          ? {
+              result: game.result,
+              question: game.question && { id: game.question.id, text: game.question.text, answer: game.question.answer },
+              cooldown: game.cannon.cooldown,
+              beams: game.beams.length,
+              lives: game.lives,
+              enemies: game.enemies.filter((e) => e.alive).map((e) => ({ id: e.id, x: e.x, y: e.y, value: e.value })),
+            }
+          : null,
+      buttons: flow.screen === 'play' ? [] : buttonsFor(flow).map(({ id, x, y }) => ({ id, x, y })),
+    }),
+    // World units → page pixels, so the bot clicks the canvas like a player.
+    toPage(x, y) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + x * scale, y: rect.top + y * scale };
+    },
+  };
+}
