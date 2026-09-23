@@ -26,6 +26,19 @@ export const SECTIONS = [
       { id: 'A5', a: [10, 50], b: [10, 49], answer: [20, 99], display: [0, 120], enemies: 6, decoys: 4, descentSpeed: 12, safeAnswerTime: 9, splashWindow: 2.8, sway: 20, rules: ['off1', 'off2', 'place', 'op'] },
     ],
   },
+  {
+    id: 'sub',
+    op: 'sub',
+    name: 'Kelp Forest',
+    boss: 'Borrowfin',
+    levels: [
+      { id: 'S1', a: [1, 9], b: [0, 9], answer: [0, 9], display: [0, 9], enemies: 4, decoys: 2, descentSpeed: 10, safeAnswerTime: 11, splashWindow: 3.6, sway: 10, rules: ['off1', 'off2'] },
+      { id: 'S2', a: [5, 18], b: [1, 9], answer: [0, 9], display: [0, 20], enemies: 5, decoys: 3, descentSpeed: 11, safeAnswerTime: 10, splashWindow: 3.2, sway: 16, rules: ['off1', 'off2', 'op'] },
+      { id: 'S3', a: [10, 50], b: [1, 9], answer: [1, 49], display: [0, 60], enemies: 5, decoys: 3, descentSpeed: 12, safeAnswerTime: 10, splashWindow: 3.0, sway: 16, rules: ['off1', 'off2', 'op', 'place'] },
+      { id: 'S4', a: [20, 99], b: [10, 49], answer: [1, 89], display: [0, 150], enemies: 6, decoys: 4, descentSpeed: 13, safeAnswerTime: 9, splashWindow: 2.8, sway: 20, rules: ['off1', 'off2', 'op', 'place'] },
+      { id: 'S5', a: [0, 20], b: [0, 20], answer: [-20, 20], display: [-40, 40], enemies: 6, decoys: 4, descentSpeed: 14, safeAnswerTime: 9, splashWindow: 2.6, sway: 20, rules: ['off1', 'off2', 'sign', 'op'] },
+    ],
+  },
 ];
 
 export function allLevels() {
