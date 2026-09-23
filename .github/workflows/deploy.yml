@@ -28,42 +28,29 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions:
-      contents: write
-      pages: write
-    env:
-      SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
       - name: Assemble static site
         run: |
           mkdir _site
-          cp index.html _site/
-          [ -f style.css ] && cp style.css _site/ || true
-          [ -d src ] && cp -r src _site/ || true
+          cp index.html style.css _site/
+          cp -r src _site/
           echo "$GITHUB_SHA" > _site/version.txt
           touch _site/.nojekyll
-      - name: Publish to the gh-pages branch
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd _site
-          git init -q -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -qm "Deploy $GITHUB_SHA"
-          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
-      - name: Ensure Pages serves gh-pages (best effort)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -s --max-time 20 -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages" \
-            -d '{"source":{"branch":"gh-pages","path":"/"}}' | head -c 400 || true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
       - name: Poll live URL until HTTP 200 with this commit
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
-          for i in $(seq 1 60); do
+          for i in $(seq 1 40); do
             code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "$SITE_URL" || true)
             live=$(curl -s --max-time 10 "${SITE_URL}version.txt?nocache=$i" || true)
             echo "attempt $i: $SITE_URL -> $code (live version: ${live:0:12})"
