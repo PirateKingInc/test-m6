@@ -3,9 +3,10 @@
 import { WORLD, TIMING } from './config.js';
 import { createGame, step, fire, fireAtX, setCannonX, targetAt } from './game.js';
 import { getLevel } from './data/levels.js';
-import { createFlow, newGame, finishLevel, advance } from './flow.js';
+import { createFlow, frontierLevel, play, askNewGame, newGame, toMap, toTitle, startLevel, finishLevel, advance } from './flow.js';
+import { loadProgress, saveProgress } from './progress.js';
 import { drawGame } from './render.js';
-import { drawTitle, drawResult, drawHud, hitButton } from './screens.js';
+import { drawTitle, drawResult, drawHud, drawMap, drawConfirm, drawEnding, hitButton } from './screens.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -23,7 +24,15 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-const flow = createFlow();
+function storage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+const flow = createFlow(loadProgress(storage()));
 let game = null;
 let gameKey = null;
 let attempt = 0;
@@ -38,12 +47,25 @@ function syncGame() {
   }
 }
 
+const ACTIONS = {
+  play: () => play(flow),
+  new: () => askNewGame(flow),
+  confirmNew: () => newGame(flow),
+  title: () => toTitle(flow),
+  map: () => toMap(flow),
+  advance: () => advance(flow),
+};
+
 function press(id) {
-  if (id === 'play') newGame(flow);
-  else if (id === 'advance') advance(flow);
+  if (id.startsWith('level:')) startLevel(flow, id.slice(6));
+  else ACTIONS[id]?.();
   attempt++;
+  saveProgress(storage(), flow.progress);
   syncGame();
 }
+
+// Enter/Space on a menu presses the screen's main button.
+const PRIMARY = { title: 'play', confirm: 'title', map: null, clear: 'advance', gameover: 'advance', ending: 'map' };
 
 const keys = new Set();
 window.addEventListener('keydown', (e) => {
@@ -51,7 +73,8 @@ window.addEventListener('keydown', (e) => {
   if (e.key === ' ' || e.key === 'Enter') {
     e.preventDefault();
     if (flow.screen === 'play') fire(game);
-    else if (!e.repeat) press(flow.screen === 'title' ? 'play' : 'advance');
+    else if (!e.repeat && flow.screen === 'map') press(`level:${frontierLevel(flow.progress)}`);
+    else if (!e.repeat && PRIMARY[flow.screen]) press(PRIMARY[flow.screen]);
   }
 });
 window.addEventListener('keyup', (e) => keys.delete(e.key));
@@ -92,6 +115,7 @@ function frame(now) {
     game.events.length = 0;
     if (game.result) {
       finishLevel(flow, game.result, game.score, game.lives);
+      saveProgress(storage(), flow.progress);
       acc = 0;
     }
   }
@@ -100,6 +124,12 @@ function frame(now) {
     drawHud(ctx, game, flow.levelId);
   } else if (flow.screen === 'title') {
     drawTitle(ctx, flow, menuTime);
+  } else if (flow.screen === 'map') {
+    drawMap(ctx, flow, menuTime);
+  } else if (flow.screen === 'confirm') {
+    drawConfirm(ctx, flow, menuTime);
+  } else if (flow.screen === 'ending') {
+    drawEnding(ctx, flow, menuTime);
   } else {
     drawResult(ctx, flow, menuTime);
   }
